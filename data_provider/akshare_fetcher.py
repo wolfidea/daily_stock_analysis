@@ -806,13 +806,13 @@ class AkshareFetcher(BaseFetcher):
         elif _is_etf_code(stock_code):
             source_key = "akshare_etf"
             if not circuit_breaker.is_available(source_key):
-                logger.warning(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
+                logger.info(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
                 return None
             return self._get_etf_realtime_quote(stock_code)
         else:
             source_key = f"akshare_{source}"
             if not circuit_breaker.is_available(source_key):
-                logger.warning(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
+                logger.info(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
                 return None
             # 普通 A 股：根据 source 选择数据源
             if source == "sina":
@@ -865,12 +865,12 @@ class AkshareFetcher(BaseFetcher):
                         break
                     except Exception as e:
                         last_error = e
-                        logger.warning(f"[API错误] ak.stock_zh_a_spot_em 获取失败 (attempt {attempt}/2): {e}")
+                        logger.info(f"[API错误] ak.stock_zh_a_spot_em 获取失败 (attempt {attempt}/2): {e}")
                         time.sleep(min(2 ** attempt, 5))
 
                 # 更新缓存：成功缓存数据；失败也缓存空数据，避免同一轮任务对同一接口反复请求
                 if df is None:
-                    logger.error(f"[API错误] ak.stock_zh_a_spot_em 最终失败: {last_error}")
+                    logger.info(f"[API错误] ak.stock_zh_a_spot_em 最终失败: {last_error}")
                     circuit_breaker.record_failure(source_key, str(last_error))
                     df = pd.DataFrame()
                 _realtime_cache['data'] = df
@@ -878,13 +878,13 @@ class AkshareFetcher(BaseFetcher):
                 logger.info(f"[缓存更新] A股实时行情(东财) 缓存已刷新，TTL={_realtime_cache['ttl']}s")
 
             if df is None or df.empty:
-                logger.warning(f"[实时行情] A股实时行情数据为空，跳过 {stock_code}")
+                logger.info(f"[实时行情] A股实时行情数据为空，跳过 {stock_code}")
                 return None
             
             # 查找指定股票
             row = df[df['代码'] == stock_code]
             if row.empty:
-                logger.warning(f"[API返回] 未找到股票 {stock_code} 的实时行情")
+                logger.info(f"[API返回] 未找到股票 {stock_code} 的实时行情")
                 return None
             
             row = row.iloc[0]
@@ -919,7 +919,7 @@ class AkshareFetcher(BaseFetcher):
             return quote
             
         except Exception as e:
-            logger.error(f"[API错误] 获取 {stock_code} 实时行情(东财)失败: {e}")
+            logger.info(f"[API错误] 获取 {stock_code} 实时行情(东财)失败: {e}")
             circuit_breaker.record_failure(source_key, str(e))
             return None
     
@@ -965,7 +965,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="HTTPStatus",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -982,7 +982,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="EmptyResponse",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1000,7 +1000,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="MalformedPayload",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1018,7 +1018,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="InsufficientFields",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1070,7 +1070,7 @@ class AkshareFetcher(BaseFetcher):
                 elapsed=api_elapsed,
                 error_type=type(e).__name__,
             )
-            logger.error(failure_message)
+            logger.info(failure_message)
             circuit_breaker.record_failure(source_key, failure_message)
             return None
     
@@ -1116,7 +1116,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="HTTPStatus",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1132,7 +1132,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="EmptyResponse",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1150,7 +1150,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="MalformedPayload",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1168,7 +1168,7 @@ class AkshareFetcher(BaseFetcher):
                     elapsed=api_elapsed,
                     error_type="InsufficientFields",
                 )
-                logger.warning(failure_message)
+                logger.info(failure_message)
                 circuit_breaker.record_failure(source_key, failure_message)
                 return None
             
@@ -1221,7 +1221,7 @@ class AkshareFetcher(BaseFetcher):
                 elapsed=api_elapsed,
                 error_type=type(e).__name__,
             )
-            logger.error(failure_message)
+            logger.info(failure_message)
             circuit_breaker.record_failure(source_key, failure_message)
             return None
     
@@ -1270,24 +1270,24 @@ class AkshareFetcher(BaseFetcher):
                         break
                     except Exception as e:
                         last_error = e
-                        logger.warning(f"[API错误] ak.fund_etf_spot_em 获取失败 (attempt {attempt}/2): {e}")
+                        logger.info(f"[API错误] ak.fund_etf_spot_em 获取失败 (attempt {attempt}/2): {e}")
                         time.sleep(min(2 ** attempt, 5))
 
                 if df is None:
-                    logger.error(f"[API错误] ak.fund_etf_spot_em 最终失败: {last_error}")
+                    logger.info(f"[API错误] ak.fund_etf_spot_em 最终失败: {last_error}")
                     circuit_breaker.record_failure(source_key, str(last_error))
                     df = pd.DataFrame()
                 _etf_realtime_cache['data'] = df
                 _etf_realtime_cache['timestamp'] = current_time
 
             if df is None or df.empty:
-                logger.warning(f"[实时行情] ETF实时行情数据为空，跳过 {stock_code}")
+                logger.info(f"[实时行情] ETF实时行情数据为空，跳过 {stock_code}")
                 return None
             
             # 查找指定 ETF
             row = df[df['代码'] == stock_code]
             if row.empty:
-                logger.warning(f"[API返回] 未找到 ETF {stock_code} 的实时行情")
+                logger.info(f"[API返回] 未找到 ETF {stock_code} 的实时行情")
                 return None
             
             row = row.iloc[0]
@@ -1320,7 +1320,7 @@ class AkshareFetcher(BaseFetcher):
             return quote
             
         except Exception as e:
-            logger.error(f"[API错误] 获取 ETF {stock_code} 实时行情失败: {e}")
+            logger.info(f"[API错误] 获取 ETF {stock_code} 实时行情失败: {e}")
             circuit_breaker.record_failure(source_key, str(e))
             return None
     
@@ -1342,7 +1342,7 @@ class AkshareFetcher(BaseFetcher):
         source_key = "akshare_hk"
 
         if not circuit_breaker.is_available(source_key):
-            logger.warning(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
+            logger.info(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
             return None
         
         try:
@@ -1371,7 +1371,7 @@ class AkshareFetcher(BaseFetcher):
             # 查找指定港股
             row = df[df['代码'] == code]
             if row.empty:
-                logger.warning(f"[API返回] 未找到港股 {code} 的实时行情")
+                logger.info(f"[API返回] 未找到港股 {code} 的实时行情")
                 return None
             
             row = row.iloc[0]
@@ -1403,7 +1403,7 @@ class AkshareFetcher(BaseFetcher):
             return quote
             
         except Exception as e:
-            logger.error(f"[API错误] 获取港股 {stock_code} 实时行情失败: {e}")
+            logger.info(f"[API错误] 获取港股 {stock_code} 实时行情失败: {e}")
             circuit_breaker.record_failure(source_key, str(e))
             return None
     
@@ -1711,7 +1711,7 @@ class AkshareFetcher(BaseFetcher):
 
     def get_sector_rankings(self, n: int = 5) -> Optional[Tuple[List[Dict], List[Dict]]]:
         """
-        获取板块涨跌榜
+        获取行业板块涨跌榜
 
         数据源优先级：
         1. 东财接口 (ak.stock_board_industry_name_em)
@@ -1719,6 +1719,24 @@ class AkshareFetcher(BaseFetcher):
         """
         import akshare as ak
 
+        def _get_rank_top_n(df: pd.DataFrame, change_col: str, industry_name: str, n: int) -> Tuple[list, list]:
+            df[change_col] = pd.to_numeric(df[change_col], errors='coerce')
+            df = df.dropna(subset=[change_col])
+
+            # 涨幅前n
+            top = df.nlargest(n, change_col)
+            top_sectors = [
+                {'name': row[industry_name], 'change_pct': row[change_col]}
+                for _, row in top.iterrows()
+            ]
+
+            bottom = df.nsmallest(n, change_col)
+            bottom_sectors = [
+                {'name': row[industry_name], 'change_pct': row[change_col]}
+                for _, row in bottom.iterrows()
+            ]
+            return top_sectors, bottom_sectors
+        
         # 优先东财接口
         try:
             self._set_random_user_agent()
@@ -1728,65 +1746,25 @@ class AkshareFetcher(BaseFetcher):
             df = ak.stock_board_industry_name_em()
             if df is not None and not df.empty:
                 change_col = '涨跌幅'
-                if change_col in df.columns:
-                    df[change_col] = pd.to_numeric(df[change_col], errors='coerce')
-                    df = df.dropna(subset=[change_col])
-
-                    # 涨幅前n
-                    top = df.nlargest(n, change_col)
-                    top_sectors = [
-                        {'name': row['板块名称'], 'change_pct': row[change_col]}
-                        for _, row in top.iterrows()
-                    ]
-
-                    bottom = df.nsmallest(n, change_col)
-                    bottom_sectors = [
-                        {'name': row['板块名称'], 'change_pct': row[change_col]}
-                        for _, row in bottom.iterrows()
-                    ]
-
-                    return top_sectors, bottom_sectors
+                name = '板块名称'
+                return _get_rank_top_n(df, change_col, name, n)
+            
         except Exception as e:
-            logger.warning(f"[Akshare] 东财接口获取板块排行失败: {e}，尝试新浪接口")
+            logger.warning(f"[Akshare] 东财接口获取行业板块排行失败: {e}，尝试新浪接口")
 
         # 东财失败后，尝试新浪接口
         try:
             self._set_random_user_agent()
             self._enforce_rate_limit()
 
-            logger.info("[API调用] ak.stock_sector_spot() 获取板块排行(新浪)...")
-            df = ak.stock_sector_spot(indicator='新浪行业')
+            logger.info("[API调用] ak.stock_sector_spot() 获取行业板块排行(新浪)...")
+            df = ak.stock_sector_spot(indicator='行业')
             if df is None or df.empty:
                 return None
-
-            change_col = None
-            for col in ['涨跌幅', 'change_pct', '涨幅']:
-                if col in df.columns:
-                    change_col = col
-                    break
-
-            name_col = None
-            for col in ['板块', '板块名称', 'label', 'name']:
-                if col in df.columns:
-                    name_col = col
-                    break
-
-            if not change_col or not name_col:
-                return None
-
-            df[change_col] = pd.to_numeric(df[change_col], errors='coerce')
-            df = df.dropna(subset=[change_col])
-            top = df.nlargest(n, change_col)
-            bottom = df.nsmallest(n, change_col)
-            top_sectors = [
-                {'name': str(row[name_col]), 'change_pct': float(row[change_col])}
-                for _, row in top.iterrows()
-            ]
-            bottom_sectors = [
-                {'name': str(row[name_col]), 'change_pct': float(row[change_col])}
-                for _, row in bottom.iterrows()
-            ]
-            return top_sectors, bottom_sectors
+            change_col = '涨跌幅'
+            name = '板块'
+            return _get_rank_top_n(df, change_col, name, n)
+        
         except Exception as e:
             logger.error(f"[Akshare] 新浪接口获取板块排行也失败: {e}")
             return None
@@ -1873,3 +1851,31 @@ if __name__ == "__main__":
             print("Failed to compute market stats.")
     except Exception as e:
         print(f"Failed to compute market stats: {e}")
+
+    # 测试筹码分布数据
+    print("\n" + "=" * 50)
+    print("测试筹码分布数据获取")
+    print("=" * 50)
+    try:
+        chip = fetcher.get_chip_distribution('600519')  # 茅台
+    except Exception as e:
+        print(f"[筹码分布] 获取失败: {e}")
+
+    # 测试行业板块排名
+    print("\n" + "=" * 50)
+    print("测试行业板块排名获取")
+    print("=" * 50)
+    try:
+        rankings = fetcher.get_sector_rankings(n=5)
+        if rankings:
+            top, bottom = rankings
+            print("涨幅榜 Top 5:")
+            for sector in top:
+                print(f"{sector['name']}: {sector['change_pct']}%")
+            print("\n跌幅榜 Top 5:")
+            for sector in bottom:
+                print(f"{sector['name']}: {sector['change_pct']}%")
+        else:
+            print("未获取到行业板块排名数据")
+    except Exception as e:
+        print(f"[行业板块排名] 获取失败: {e}")
